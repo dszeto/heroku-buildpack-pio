@@ -1,7 +1,7 @@
-web: bin/pio eventserver --port ${PORT} && target/universal/stage/bin/pio
-status: bin/pio status
+web: pio eventserver --port ${PORT} && target/universal/stage/bin/pio
+status: pio status
 
-listapp: bin/pio app list
-createapp: bin/pio app new $1
-deleteapp: bin/pio app delete $1
-deletedata: bin/pio app data-delete $1
+listapp: pio app list
+createapp: pio app new $1
+deleteapp: pio app delete $1
+deletedata: pio app data-delete $1
