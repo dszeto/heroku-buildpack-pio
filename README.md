@@ -42,11 +42,13 @@ heroku run 'pio app new my-pio-app-name'
 
 ### Find the eventserver's Postgresql add-on
 
+Look for the add-on identifier, like `postgresql-aerodynamic-00000`.
+
 ```bash
 heroku addons
 ```
 
-* The `postgres-` ID will be needed in a later step.
+* The identifier will be needed in a later step
 
 
 ## Create an Engine
@@ -79,7 +81,7 @@ heroku config:set PIO_EVENTSERVER_IP=my-eventserver-name.herokuapp.com PIO_EVENT
 
 ### Update `engine.json`
 
-Modify this file to make sure the `appName` parameter matches the app record you created earlier.
+Modify this file to make sure the `appName` parameter matches the app record [created in the eventserver](#generate-an-app-record-on-the-eventserver).
 
 ```json
   "datasource": {
