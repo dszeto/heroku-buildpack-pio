@@ -5,7 +5,7 @@
 
 Two apps are composed to make a basic PredictionIO service:
 
-1. **Engine**: a specialized machine learning app which provides training of a model and then queries against that model; generated from a template or custom code.
+1. **Engine**: a specialized machine learning app which provides training of a model and then queries against that model; generated from a [template](http://predictionio.incubator.apache.org/gallery/template-gallery/) or [custom code](http://predictionio.incubator.apache.org/customize/).
 2. **Eventserver**: a simple HTTP API app for capturing events to process from other systems; shareable between multiple engines.
 
 
@@ -20,11 +20,17 @@ heroku addons:create heroku-postgresql:standard-0
 heroku buildpacks:add -i 1 https://github.com/heroku/heroku-buildpack-pio.git
 heroku buildpacks:add -i 2 https://github.com/heroku/spark-in-space.git
 heroku buildpacks:add -i 3 heroku/scala
-
-git push heroku master
 ```
 
 * We specify a `standard-0` database, because the free `hobby-dev` database is limited to 10,000 records.
+
+### Deploy the eventserver
+
+We delay deployment until the database is ready.
+
+```bash
+heroku pg:wait && git push heroku master
+```
 
 ### Generate an app record on the eventserver
 
@@ -68,12 +74,28 @@ Replace the Postgres ID & eventserver config values with those from above:
 
 ```bash
 heroku addons:attach postgresql-name-XXXXX
-heroku config:set PIO_EVENTSERVER_IP=my-eventserver-name PIO_EVENTSERVER_PORT=80 ACCESS_KEY=XXXXX APP_NAME=my-pio-app-name
+heroku config:set PIO_EVENTSERVER_IP=my-eventserver-name.herokuapp.com PIO_EVENTSERVER_PORT=80 ACCESS_KEY=XXXXX APP_NAME=my-pio-app-name
 ```
+
+### Update `engine.json`
+
+Modify this file to make sure the `appName` parameter matches the app record you created earlier.
+
+```json
+  "datasource": {
+    "params" : {
+      "appName": "my-pio-app-name"
+    }
+  }
+```
+
+* If the `appName` param is missing, you may need to [upgrade the template](http://predictionio.incubator.apache.org/resources/upgrade/).
 
 ### Deploy to Heroku
 
 ```bash
+git add .
+git commit -m "Initial PIO engine"
 git push heroku master
 ```
 
@@ -87,6 +109,9 @@ This step will vary based on the engine. See the template's docs for instruction
 heroku run bash --size Performance-M
 cd pio-engine
 pio train -- --driver-memory 2g
+
+# Once it completes…
+exit
 ```
 
 * We specify a larger, more expensive dyno size for training. Adjust the `--size` & `--driver-memory` flags to fit each other & your requirements.
