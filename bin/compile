@@ -119,5 +119,5 @@ then
   echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
 
 else
-  echo "No engine to build. (`engine.json` does not exist.)" | indent
+  echo 'No engine to build. (`engine.json` does not exist.)' | indent
 fi
