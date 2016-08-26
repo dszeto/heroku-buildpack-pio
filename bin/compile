@@ -115,9 +115,9 @@ then
     mv "${BUILD_DIR}/${app_namespace}/Procfile" $BUILD_DIR
   fi
 
-  topic "Setting Spark version for compatibility with PredictionIO"
-  echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
-
 else
   echo 'No engine to build. (`engine.json` does not exist.)' | indent
 fi
+
+topic "Setting Spark version for compatibility with PredictionIO"
+echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
