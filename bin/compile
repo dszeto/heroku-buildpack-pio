@@ -91,27 +91,33 @@ cp -r .profile.d/* "$BUILD_DIR/.profile.d/" | indent
 export_env_dir "$ENV_DIR" '^DATABASE_URL$'
 source .profile.d/pio-env.sh
 
-topic "Build PredictionIO engine"
-# Move to dyno-compatible prefix for `pio build`
-mv $BUILD_DIR/* $app_prefix
-cd $app_prefix
-$dist_name/bin/pio build | indent
-
-topic "Clean-up build artifacts"
-# Try to keep slug below 300MB limit.
-# This is based on profiling with
-# `du -a "${BUILD_DIR}" | sort -n -r | head -n 50`
-# and removing big objects that seem unnecessary.
-rm -rf "target/streams" || true
-
-topic "Moving build artifacts into place"
-# After PIO build at the runtime prefix, move the engine into the slug
-mv $app_prefix $BUILD_DIR
-# Move the Procfile back to the top-level app directory
-if [ -f "${BUILD_DIR}/${app_namespace}/Procfile" ]
+if [ -f "${BUILD_DIR}/engine.json" ]
 then
-  mv "${BUILD_DIR}/${app_namespace}/Procfile" $BUILD_DIR
-fi
+  topic "Build PredictionIO engine"
+  # Move to dyno-compatible prefix for `pio build`
+  mv $BUILD_DIR/* $app_prefix
+  cd $app_prefix
+  $dist_name/bin/pio build | indent
 
-topic "Setting Spark version for compatibility with PredictionIO"
-echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
+  topic "Clean-up build artifacts"
+  # Try to keep slug below 300MB limit.
+  # This is based on profiling with
+  # `du -a "${BUILD_DIR}" | sort -n -r | head -n 50`
+  # and removing big objects that seem unnecessary.
+  rm -rf "target/streams" || true
+
+  topic "Moving build artifacts into place"
+  # After PIO build at the runtime prefix, move the engine into the slug
+  mv $app_prefix $BUILD_DIR
+  # Move the Procfile back to the top-level app directory
+  if [ -f "${BUILD_DIR}/${app_namespace}/Procfile" ]
+  then
+    mv "${BUILD_DIR}/${app_namespace}/Procfile" $BUILD_DIR
+  fi
+
+  topic "Setting Spark version for compatibility with PredictionIO"
+  echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
+
+else
+  echo "No engine to build. (`engine.json` does not exist.)" | indent
+fi
