@@ -2,8 +2,10 @@
 
 export SPARK_HOME=/app/spark-home
 
-# Must contain the bin path used for `pio build` in compile
-export PATH=/app/pio-engine/PredictionIO-dist/bin:$PATH
+# PATH must include
+# * the bin/ where `pio build` ran (for an engine)
+# * just the distribution's bin/ (for the eventserver)
+export PATH=/app/pio-engine/PredictionIO-dist/bin:/app/PredictionIO-dist/bin:$PATH
 
 # Transform env variables to be consumed by PredictionIO's `conf/pio-env.sh`.
 #
