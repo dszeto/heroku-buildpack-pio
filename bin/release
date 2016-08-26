@@ -3,4 +3,7 @@ cat << EOF
 ---
 addons:
   - heroku-postgresql:hobby-dev
+default_process_types:
+  web: cd pio-engine/ && pio deploy --port \$PORT --event-server-ip \$PIO_EVENTSERVER_IP --event-server-port \$PIO_EVENTSERVER_PORT --accesskey \$ACCESS_KEY
+  train: cd pio-engine/ && pio train
 EOF

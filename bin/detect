@@ -1,8 +1,4 @@
 #!/bin/bash
 
-if [ -f $1/conf/pio-env.sh ]; then
-  echo "PredictionIO"
-  exit 0
-else
-  exit 1
-fi
+echo "PredictionIO"
+exit 0

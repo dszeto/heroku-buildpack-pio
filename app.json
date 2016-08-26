@@ -1,19 +1,24 @@
 {
-  "name": "pio-demo-eventserver",
-  "description": "PredictionIO eventserver for demo",
+  "name": "pio-eventserver",
+  "description": "PredictionIO eventserver",
   "keywords": [
     "predictionio",
-    "machinelearning"
+    "machinelearning",
+    "spark",
+    "sparkml"
   ],
   "addons": [
     "heroku-postgresql"
   ],
   "buildpacks": [
     {
-      "url": "https://github.com/chanlee514/pio-buildpack"
+      "url": "https://github.com/heroku/heroku-buildpack-jvm-common.git"
     },
     {
-      "url": "heroku/scala"
+      "url": "https://github.com/heroku/heroku-buildpack-pio"
+    },
+    {
+      "url": "https://github.com/heroku/spark-in-space.git"
     }
   ]
 }

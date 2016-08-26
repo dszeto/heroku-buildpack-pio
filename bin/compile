@@ -1,43 +1,117 @@
 #!/bin/bash
-set -e
 
+# Fail immediately on non-zero exit code.
+set -e
+# Fail immediately on non-zero exit code within a pipeline.
+set -o pipefail
+# Fail on undeclared variables.
+set -u
+# Debug, echo every command
+#set -x
+
+SPARK_VERSION=1.4.1
 PIO_VERSION=0.9.5
 PIO_BUILD=PredictionIO-${PIO_VERSION}
 
-# Move app to a static build dir to keep paths the same between builds
-# This is necessary for incremental compile, because sbt invalidates the
-# cache if the path is different.
-APP_BUILD_DIR=$(cd $1; pwd)
-BUILD_DIR="/tmp/pio_buildpack_build_dir"
-mv $APP_BUILD_DIR $BUILD_DIR
-cd ${BUILD_DIR}
+function error() {
+  echo " !     $*" >&2
+  exit 1
+}
 
-echo "-----> Downloading PredictionIO..."
-curl -OL --silent http://download.prediction.io/${PIO_BUILD}.tar.gz
-tar zxf ${PIO_BUILD}.tar.gz --warning=none
-rm -rf ${BUILD_DIR}/${PIO_BUILD}/target
+function topic() {
+  echo "-----> $*"
+}
 
-# Install Spark in /vendors directory
-VENDORS_DIR=${BUILD_DIR}/vendors
-mkdir ${VENDORS_DIR}
-SPARK_VERSION=1.3.1
-SPARK_DIR=${VENDORS_DIR}/spark-${SPARK_VERSION}
-SPARK_FILE=spark-${SPARK_VERSION}-bin-hadoop2.6
-echo "-----> Downloading Spark for PredictionIO..."
-curl -O --silent http://d3kbcqa49mib13.cloudfront.net/${SPARK_FILE}.tgz
-tar xf ${SPARK_FILE}.tgz
-rm -rf ${SPARK_DIR} ${SPARK_FILE}.tgz
-mv ${SPARK_FILE} ${SPARK_DIR}
+function indent() {
+  c='s/^/       /'
+  case $(uname) in
+    Darwin) sed -l "$c";;
+    *)      sed -u "$c";;
+  esac
+}
 
-echo "-----> Writing configurations for PredictionIO..."
-cp -rn ${BUILD_DIR}/${PIO_BUILD}/* ${BUILD_DIR}/
-# cp -rn ${BUILD_DIR}/${PIO_BUILD}/* ${BUILD_DIR}/
-rm -rf ${PIO_BUILD} ${PIO_BUILD}.tar.gz
+export_env_dir() {
+  local env_dir=$1
+  local whitelist_regex=${2:-''}
+  local blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH|IFS)$'}
+  if [ -d "$env_dir" ]; then
+    for e in $(ls $env_dir); do
+      echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+      export "$e=$(cat $env_dir/$e)"
+      :
+    done
+  fi
+}
 
-# Source pio-env.sh on startup
-profileScript="${BUILD_DIR}/.profile.d/pio-env.sh"
-mkdir -p $(dirname $profileScript)
-cat ${BUILD_DIR}/conf/pio-env.sh > $profileScript
+# parse and derive params
+BUILD_DIR=$1
+CACHE_DIR=$2
+ENV_DIR=${3:-}
 
-mv ${BUILD_DIR} ${APP_BUILD_DIR}
-echo -e "\033[1;32m-----> PredictionIO setup done!\033[0m"
+# PredictionIO dist tarball URL, expects `.tar.gz` 
+default_url="https://s3-us-west-2.amazonaws.com/download.prediction.io/${PIO_BUILD}.tar.gz"
+export_env_dir "$ENV_DIR" '^PREDICTIONIO_DIST_URL$'
+url="${PREDICTIONIO_DIST_URL-$default_url}"
+
+# The PATH set in .profile.d/pio-env.sh must match.
+dist_name="PredictionIO-dist"
+dist_dir="$BUILD_DIR/$dist_name"
+
+# Build with dyno runtime-compatible prefix.
+# The PATH set in .profile.d/pio-env.sh must match.
+# (`pio build` ends up capturing its absolute build path, so it needs
+# to align with the actual runtime.)
+app_namespace="pio-engine"
+app_prefix="/app/${app_namespace}"
+mkdir -p $app_prefix
+
+default_pio_env="config/pio-env-12f.sh"
+custom_pio_env="$BUILD_DIR/config/pio-env.sh"
+target_pio_env="${dist_dir}/conf/pio-env.sh"
+
+topic "Fetch distribution of PredictionIO"
+curl -o "${dist_name}.tar.gz" -S "$url"
+mkdir -p "$dist_dir"
+tar -xz -f "${dist_name}.tar.gz" -C "$dist_dir" --strip-components=1 | indent
+
+topic "Configure PredictionIO"
+if [ -f "${custom_pio_env}" ]
+then
+  echo "Using custom 'config/pio-env.sh'" | indent
+  cp "${custom_pio_env}" "${target_pio_env}" | indent
+else
+  echo "Writing default 'pio-env.sh'" | indent
+  cp "${default_pio_env}" "${target_pio_env}" | indent
+fi
+
+topic "Set-up PredictionIO environment"
+mkdir -p "$BUILD_DIR/.profile.d"
+cp -r .profile.d/* "$BUILD_DIR/.profile.d/" | indent
+# Load the env for the following build steps
+export_env_dir "$ENV_DIR" '^DATABASE_URL$'
+source .profile.d/pio-env.sh
+
+topic "Build PredictionIO engine"
+# Move to dyno-compatible prefix for `pio build`
+mv $BUILD_DIR/* $app_prefix
+cd $app_prefix
+$dist_name/bin/pio build | indent
+
+topic "Clean-up build artifacts"
+# Try to keep slug below 300MB limit.
+# This is based on profiling with
+# `du -a "${BUILD_DIR}" | sort -n -r | head -n 50`
+# and removing big objects that seem unnecessary.
+rm -rf "target/streams" || true
+
+topic "Moving build artifacts into place"
+# After PIO build at the runtime prefix, move the engine into the slug
+mv $app_prefix $BUILD_DIR
+# Move the Procfile back to the top-level app directory
+if [ -f "${BUILD_DIR}/${app_namespace}/Procfile" ]
+then
+  mv "${BUILD_DIR}/${app_namespace}/Procfile" $BUILD_DIR
+fi
+
+topic "Setting Spark version for compatibility with PredictionIO"
+echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
