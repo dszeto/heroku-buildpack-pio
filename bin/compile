@@ -44,9 +44,10 @@ export_env_dir() {
 }
 
 # parse and derive params
-BUILD_DIR=$1
-CACHE_DIR=$2
+BUILD_DIR=${1:-}
+CACHE_DIR=${2:-}
 ENV_DIR=${3:-}
+BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
 
 # PredictionIO dist tarball URL, expects `.tar.gz` 
 default_url="https://s3-us-west-2.amazonaws.com/download.prediction.io/${PIO_BUILD}.tar.gz"
@@ -109,10 +110,13 @@ then
   topic "Moving build artifacts into place"
   # After PIO build at the runtime prefix, move the engine into the slug
   mv $app_prefix $BUILD_DIR
-  # Move the Procfile back to the top-level app directory
+  # Move the Procfile back to the top-level app directory or use default for engines
+  # (`bin/release` default_process_types have no effect since this is never the last buildpack)
   if [ -f "${BUILD_DIR}/${app_namespace}/Procfile" ]
   then
     mv "${BUILD_DIR}/${app_namespace}/Procfile" $BUILD_DIR
+  else
+    mv "${BP_DIR}/Procfile-engine" "${BUILD_DIR}/Procfile"
   fi
 
 else
