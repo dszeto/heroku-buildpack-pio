@@ -9,7 +9,7 @@ set -u
 # Debug, echo every command
 #set -x
 
-SPARK_VERSION=1.4.1
+SPARK_VERSION=1.6.1
 PIO_VERSION=0.9.5
 PIO_BUILD=PredictionIO-${PIO_VERSION}
 
