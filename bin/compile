@@ -128,5 +128,5 @@ topic "Setting Spark version for compatibility with PredictionIO"
 echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
 
 topic "Install PostgreSQL database driver"
-mkdir -p "/app/lib"
-curl -s -L "https://marsikai.s3.amazonaws.com/$POSTGRESQL_DRIVER" > /app/lib/postgresql_jdbc.jar
+mkdir -p "${BUILD_DIR}/lib"
+curl -s -L "https://marsikai.s3.amazonaws.com/$POSTGRESQL_DRIVER" > "${BUILD_DIR}/lib/postgresql_jdbc.jar"
