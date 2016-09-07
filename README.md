@@ -108,9 +108,9 @@ This step will vary based on the engine. See the template's docs for instruction
 ### Train the model
 
 ```bash
-heroku run bash --size Performance-M
+heroku run bash --size Performance-L
 cd pio-engine
-pio train -- --driver-memory 2g
+pio train -- --driver-memory 12g  --driver-class-path /app/lib/postgresql_jdbc.jar
 
 # Once it completes…
 exit

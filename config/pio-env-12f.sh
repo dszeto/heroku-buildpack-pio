@@ -11,7 +11,7 @@
 # Must match $spark_dist_dir in bin.compile
 SPARK_HOME=/app/spark-home
 
-POSTGRES_JDBC_DRIVER=$SPARK_HOME/lib/postgresql_jdbc.jar
+POSTGRES_JDBC_DRIVER=/app/lib/postgresql_jdbc.jar
 
 # ES_CONF_DIR: You must configure this if you have advanced configuration for
 #              your Elasticsearch setup.
