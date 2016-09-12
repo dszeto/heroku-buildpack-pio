@@ -1,1 +1,1 @@
-web: cd pio-engine/ && pio deploy --port $PORT --event-server-ip $PIO_EVENTSERVER_IP --event-server-port $PIO_EVENTSERVER_PORT --accesskey $ACCESS_KEY
+web: cd pio-engine/ && pio deploy --port $PORT --event-server-ip $PIO_EVENTSERVER_IP --event-server-port $PIO_EVENTSERVER_PORT --accesskey $ACCESS_KEY -- --driver-class-path /app/lib/postgresql_jdbc.jar

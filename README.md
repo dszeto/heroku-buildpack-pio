@@ -108,12 +108,23 @@ This step will vary based on the engine. See the template's docs for instruction
 ### Train the model
 
 ```bash
-heroku run bash --size Performance-M
+heroku run bash --size Performance-L
 cd pio-engine
-pio train -- --driver-memory 2g
+pio train -- --driver-memory 12g --driver-class-path /app/lib/postgresql_jdbc.jar
 
 # Once it completes…
 exit
+
+# If this was the first training, revive the app from "crashed" state.
+heroku restart
 ```
 
 * We specify a larger, more expensive dyno size for training. Adjust the `--size` & `--driver-memory` flags to fit each other & your requirements.
+
+### Running commands
+
+`pio` commands that require DB access will need to have the driver specified as an argument (bug with PIO 0.9.5 + Spark 1.6.1):
+
+```bash
+pio {command} -- --driver-class-path /app/lib/postgresql_jdbc.jar
+```
