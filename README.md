@@ -258,8 +258,7 @@ Once `pio eval` completes, still in the Heroku console, copy the contents of `be
 $ cat best.json
 ```
 
-♻️ Paste into your local `engine.json`, commit, & deploy.
-
+♻️ Paste into your local `engine.json`, commit, & deploy.-
 
 ## Configuration
 
@@ -314,4 +313,3 @@ Check engine status:
 ```bash
 heroku run "cd pio-engine && pio status -- --driver-class-path /app/lib/postgresql_jdbc.jar"
 ```
-

@@ -9,10 +9,9 @@ set -u
 # Debug, echo every command
 #set -x
 
-SPARK_VERSION=1.6.1
+SPARK_VERSION=1.4.1
 PIO_VERSION=0.9.5
 PIO_BUILD=PredictionIO-${PIO_VERSION}
-POSTGRESQL_DRIVER=postgresql-9.4.1209.jar
 
 function error() {
   echo " !     $*" >&2
@@ -130,7 +129,3 @@ fi
 
 topic "Setting Spark version for compatibility with PredictionIO"
 echo "$SPARK_VERSION" > "$BUILD_DIR/.spark.version"
-
-topic "Install PostgreSQL database driver"
-mkdir -p "${BUILD_DIR}/lib"
-curl -s -L "https://marsikai.s3.amazonaws.com/$POSTGRESQL_DRIVER" > "${BUILD_DIR}/lib/postgresql_jdbc.jar"
