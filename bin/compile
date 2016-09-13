@@ -122,8 +122,8 @@ then
 
   topic "Set-up train on release (disable with PIO_TRAIN_ON_RELEASE=false)"
   mkdir -p "$BUILD_DIR/bin"
-  cp "$BP_DIR/bin/engine/heroku-*" "$BUILD_DIR/bin/"
-  
+  cp $BP_DIR/bin/engine/heroku-* "$BUILD_DIR/bin/"
+
 else
   echo 'No engine to build. (`engine.json` does not exist.)' | indent
 fi
