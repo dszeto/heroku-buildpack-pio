@@ -93,6 +93,10 @@ Modify this file to make sure the `appName` parameter matches the app record [cr
 
 * If the `appName` param is missing, you may need to [upgrade the template](http://predictionio.incubator.apache.org/resources/upgrade/).
 
+### Import data
+
+This step will vary based on the engine. See the template's docs for instructions.
+
 ### Deploy to Heroku
 
 ```bash
@@ -101,19 +105,28 @@ git commit -m "Initial PIO engine"
 git push heroku master
 ```
 
-### Import data
-
-This step will vary based on the engine. See the template's docs for instructions.
-
 ### Train the model
 
-```bash
-heroku run bash --size Performance-L
-cd pio-engine
-pio train -- --driver-memory 12g --driver-class-path /app/lib/postgresql_jdbc.jar
+#### Automatic training
 
-# Once it completes…
-exit
+`pio train` will automatically run during [release-phase of the Heroku app](https://devcenter.heroku.com/articles/release-phase).
+
+The release dyno size should be set to a larger dyno, like Performance-L:
+
+```bash
+heroku ps:scale release=0:Performance-L
+```
+
+Auto training may be disabled with:
+
+```bash
+heroku config:set PIO_TRAIN_ON_RELEASE=false
+```
+
+#### Manual training
+
+```bash
+heroku run train --size Performance-L
 
 # If this was the first training, revive the app from "crashed" state.
 heroku restart
@@ -121,10 +134,34 @@ heroku restart
 
 * We specify a larger, more expensive dyno size for training. Adjust the `--size` & `--driver-memory` flags to fit each other & your requirements.
 
+#### Configure training
+
+Pass additional options for:
+
+* **pio** set `PIO_TRAIN_OPTS`
+  * example: `heroku config:set PIO_OPTS='--variant engine-b.json'`
+* **spark-submit** set `PIO_TRAIN_SPARK_OPTS`
+  * example: `heroku config:set PIO_TRAIN_SPARK_OPTS='--driver-memory 12g'`
+
 ### Running commands
 
 `pio` commands that require DB access will need to have the driver specified as an argument (bug with PIO 0.9.5 + Spark 1.6.1):
 
 ```bash
-pio {command} -- --driver-class-path /app/lib/postgresql_jdbc.jar
+pio ${command} -- --driver-class-path /app/lib/postgresql_jdbc.jar
 ```
+
+#### To run directly with Heroku CLI
+
+```bash
+heroku run "cd pio-engine && pio ${command} -- --driver-class-path /app/lib/postgresql_jdbc.jar"
+```
+
+#### Useful commands
+
+Check engine status:
+
+```bash
+heroku run "cd pio-engine && pio status -- --driver-class-path /app/lib/postgresql_jdbc.jar"
+```
+
