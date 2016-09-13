@@ -1,1 +1,3 @@
-web: cd pio-engine/ && pio deploy --port $PORT --event-server-ip $PIO_EVENTSERVER_IP --event-server-port $PIO_EVENTSERVER_PORT --accesskey $ACCESS_KEY -- --driver-class-path /app/lib/postgresql_jdbc.jar
+web: bin/heroku-buildpack-pio-web
+train: bin/heroku-buildpack-pio-train
+release: bin/heroku-buildpack-pio-release
