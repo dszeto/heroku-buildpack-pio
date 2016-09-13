@@ -123,6 +123,8 @@ heroku pg:wait && git push heroku master
 
 [Install PredictionIO locally](https://predictionio.incubator.apache.org/install/) and [download an engine template](https://predictionio.incubator.apache.org/start/download/) from the [gallery](https://predictionio.incubator.apache.org/gallery/template-gallery/). This can be as simple as downloading the source from Github and expanding it on your local computer.
 
+See [UPDATING](UPDATING.md) to port an engine from PIO 0.9 to 0.10.
+
 `cd` into the engine directory, and ensure it is a git repo:
 
 ```bash
@@ -313,3 +315,4 @@ Check engine status:
 ```bash
 heroku run "cd pio-engine && pio status -- --driver-class-path /app/lib/postgresql_jdbc.jar"
 ```
+
