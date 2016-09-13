@@ -134,14 +134,14 @@ heroku restart
 
 * We specify a larger, more expensive dyno size for training. Adjust the `--size` & `--driver-memory` flags to fit each other & your requirements.
 
-#### Configure training
+### Configure train & deploy
 
 Pass additional options for:
 
-* **pio** set `PIO_TRAIN_OPTS`
+* **pio** set `PIO_OPTS`
   * example: `heroku config:set PIO_OPTS='--variant engine-b.json'`
-* **spark-submit** set `PIO_TRAIN_SPARK_OPTS`
-  * example: `heroku config:set PIO_TRAIN_SPARK_OPTS='--driver-memory 12g'`
+* **spark-submit** set `PIO_SPARK_OPTS`
+  * example: `heroku config:set PIO_SPARK_OPTS='--driver-memory 12g'`
 
 ### Running commands
 
