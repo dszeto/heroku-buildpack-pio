@@ -11,7 +11,7 @@ set -u
 
 SPARK_VERSION=1.6.1
 PIO_VERSION=0.10.0-incubating-rc1
-PIO_BUILD=predictionio-${PIO_VERSION}
+PIO_BUILD=PredictionIO-${PIO_VERSION}
 
 function error() {
   echo " !     $*" >&2
@@ -50,7 +50,7 @@ ENV_DIR=${3:-}
 BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
 
 # PredictionIO dist tarball URL, expects `.tar.gz` 
-default_url="https://dist.apache.org/repos/dist/dev/incubator/predictionio/${PIO_VERSION}/${PIO_BUILD}.tar.gz"
+default_url="https://marsikai.s3.amazonaws.com/${PIO_BUILD}.tar.gz"
 export_env_dir "$ENV_DIR" '^PREDICTIONIO_DIST_URL$'
 url="${PREDICTIONIO_DIST_URL-$default_url}"
 
