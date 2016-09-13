@@ -136,12 +136,17 @@ heroku restart
 
 ### Configure train & deploy
 
-Pass additional options for:
+Pass additional options:
 
-* **pio** set `PIO_OPTS`
+* **pio command**
+  * set `PIO_OPTS`
   * example: `heroku config:set PIO_OPTS='--variant engine-b.json'`
-* **spark-submit** set `PIO_SPARK_OPTS`
-  * example: `heroku config:set PIO_SPARK_OPTS='--driver-memory 12g'`
+* **Spark deployment**
+  * set `PIO_SPARK_OPTS`
+  * example: `heroku config:set PIO_SPARK_OPTS='--driver-memory 1g'`
+* **Spark training**
+  * set `PIO_TRAIN_SPARK_OPTS`
+  * example: `heroku config:set PIO_TRAIN_SPARK_OPTS='--driver-memory 12g'`
 
 ### Running commands
 

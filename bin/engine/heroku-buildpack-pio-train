@@ -3,4 +3,4 @@
 # Fail immediately on non-zero exit code.
 set -e
 
-eval "cd /app/pio-engine && pio train ${PIO_OPTS:-} -- --driver-class-path /app/lib/postgresql_jdbc.jar ${PIO_SPARK_OPTS:-}"
+eval "cd /app/pio-engine && pio train ${PIO_OPTS:-} -- --driver-class-path /app/lib/postgresql_jdbc.jar ${PIO_TRAIN_SPARK_OPTS:-}"
