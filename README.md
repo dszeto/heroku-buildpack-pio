@@ -15,9 +15,9 @@ Two apps are composed to make a basic PredictionIO service:
 git clone https://github.com/heroku/heroku-buildpack-pio.git pio-eventserver
 cd pio-eventserver
 
-heroku create my-eventserver-name
+heroku create $eventserver-name
 heroku addons:create heroku-postgresql:standard-0
-heroku buildpacks:add -i 1 https://github.com/heroku/heroku-buildpack-pio.git
+heroku buildpacks:add -i 1 https://github.com/heroku/heroku-buildpack-pio.git#support-private-spaces
 heroku buildpacks:add -i 2 https://github.com/heroku/spark-in-space.git
 heroku buildpacks:add -i 3 heroku/scala
 ```
@@ -35,7 +35,7 @@ heroku pg:wait && git push heroku master
 ### Generate an app record on the eventserver
 
 ```bash
-heroku run 'pio app new my-pio-app-name'
+heroku run 'pio app new $pio-app-name'
 ```
 
 * The app name, ID, & access key will be needed in a later step.
@@ -64,9 +64,9 @@ git init
 ### Create a Heroku app for the engine
 
 ```bash
-heroku create my-engine-name
+heroku create $engine-name
 heroku buildpacks:add -i 1 https://github.com/heroku/heroku-buildpack-jvm-common.git
-heroku buildpacks:add -i 2 https://github.com/heroku/heroku-buildpack-pio.git
+heroku buildpacks:add -i 2 https://github.com/heroku/heroku-buildpack-pio.git#support-private-spaces
 heroku buildpacks:add -i 3 https://github.com/heroku/spark-in-space.git
 ```
 
@@ -76,7 +76,7 @@ Replace the Postgres ID & eventserver config values with those from above:
 
 ```bash
 heroku addons:attach postgresql-name-XXXXX
-heroku config:set PIO_EVENTSERVER_IP=my-eventserver-name.herokuapp.com PIO_EVENTSERVER_PORT=80 ACCESS_KEY=XXXXX APP_NAME=my-pio-app-name
+heroku config:set PIO_EVENTSERVER_IP=$eventserver-name.herokuapp.com PIO_EVENTSERVER_PORT=80 ACCESS_KEY=XXXXX APP_NAME=$pio-app-name
 ```
 
 ### Update `engine.json`
@@ -86,7 +86,7 @@ Modify this file to make sure the `appName` parameter matches the app record [cr
 ```json
   "datasource": {
     "params" : {
-      "appName": "my-pio-app-name"
+      "appName": "$pio-app-name"
     }
   }
 ```
@@ -168,5 +168,25 @@ Check engine status:
 
 ```bash
 heroku run "cd pio-engine && pio status -- --driver-class-path /app/lib/postgresql_jdbc.jar"
+```
+
+### Spark cluster
+
+Use PredictionIO engines with a scalable Spark cluster.
+
+Deploy [spark-in-space](https://github.com/heroku/spark-in-space) into a [Private Space](https://devcenter.heroku.com/articles/private-spaces).
+
+Database must be in Common Runtime (connection is required during build):
+
+```bash
+heroku addons:create heroku-postgresql:standard-0 --region=us -a $eventserver-name --confirm $eventserver-name
+```
+
+Set Spark master on an engine:
+
+```bash
+heroku config:set \
+  PIO_TRAIN_SPARK_OPTS='--master spark://1.master.$spark-master-name.app.localspace:7077' \
+  PIO_SPARK_OPTS='--master spark://1.master.$spark-master-name.app.localspace:7077'
 ```
 
