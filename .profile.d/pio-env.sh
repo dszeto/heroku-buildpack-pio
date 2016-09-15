@@ -54,7 +54,7 @@ else
     # extract the path (if any)
     path="`echo $url | grep / | cut -d/ -f2-`"
 
-    export PIO_STORAGE_SOURCES_PGSQL_URL=jdbc:postgresql://$hostport/$path
+    export PIO_STORAGE_SOURCES_PGSQL_URL=jdbc:postgresql://$hostport/$path?sslmode=require
     export PIO_STORAGE_SOURCES_PGSQL_USERNAME=$user
     export PIO_STORAGE_SOURCES_PGSQL_PASSWORD=$pass
 fi
