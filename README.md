@@ -16,13 +16,31 @@ git clone https://github.com/heroku/heroku-buildpack-pio.git pio-eventserver
 cd pio-eventserver
 
 heroku create $eventserver-name
-heroku addons:create heroku-postgresql:standard-0
 heroku buildpacks:add -i 1 https://github.com/heroku/heroku-buildpack-pio.git#support-private-spaces
 heroku buildpacks:add -i 2 https://github.com/heroku/spark-in-space.git
 heroku buildpacks:add -i 3 heroku/scala
 ```
 
-* We specify a `standard-0` database, because the free `hobby-dev` database is limited to 10,000 records.
+### Create database
+
+✏️ The identifiers returned for these databases, like `postgresql-aerodynamic-00000`, will be needed in a later step.
+
+#### Private PostgreSQL
+
+When deploying into a Private Space, two databases are required:
+
+```bash
+heroku addons:create heroku-postgresql:standard-0
+heroku addons:create heroku-postgresql:private-0 --as PRIVATE_DATABASE
+```
+
+#### Standard PostgreSQL
+
+When deploying a single-dyno in the Common Runtime, a single database is needed:
+
+```bash
+heroku addons:create heroku-postgresql:standard-0
+```
 
 ### Deploy the eventserver
 
@@ -39,16 +57,6 @@ heroku run 'pio app new $pio-app-name'
 ```
 
 * The app name, ID, & access key will be needed in a later step.
-
-### Find the eventserver's Postgresql add-on
-
-Look for the add-on identifier, like `postgresql-aerodynamic-00000`.
-
-```bash
-heroku addons
-```
-
-* The identifier will be needed in a later step
 
 
 ## Create an Engine
@@ -70,13 +78,27 @@ heroku buildpacks:add -i 2 https://github.com/heroku/heroku-buildpack-pio.git#su
 heroku buildpacks:add -i 3 https://github.com/heroku/spark-in-space.git
 ```
 
-### Configure the Heroku app to use the eventserver
+### Attach the databases to the engine
 
-Replace the Postgres ID & eventserver config values with those from above:
+Replace the Postgres ID values with those from above:
 
 ```bash
 heroku addons:attach postgresql-name-XXXXX
-heroku config:set PIO_EVENTSERVER_IP=$eventserver-name.herokuapp.com PIO_EVENTSERVER_PORT=80 ACCESS_KEY=XXXXX APP_NAME=$pio-app-name
+
+# If deploying to a Private Space, attach the private database too.
+heroku addons:attach postgresql-privatename-XXXXX --as PRIVATE_DATABASE
+```
+
+### Configure the engine to use the eventserver
+
+Replace the eventserver config values with those from above:
+
+```bash
+heroku config:set \
+  PIO_EVENTSERVER_IP=$eventserver-name.herokuapp.com \
+  PIO_EVENTSERVER_PORT=80 \
+  ACCESS_KEY=XXXXX \
+  APP_NAME=$pio-app-name
 ```
 
 ### Update `engine.json`
