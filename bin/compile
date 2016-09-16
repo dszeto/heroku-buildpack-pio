@@ -90,7 +90,7 @@ topic "Set-up PredictionIO environment"
 mkdir -p "$BUILD_DIR/.profile.d"
 cp -r .profile.d/* "$BUILD_DIR/.profile.d/" | indent
 # Load the env for the following build steps
-export_env_dir "$ENV_DIR" '^DATABASE_URL$'
+export_env_dir "$ENV_DIR" '^(DATABASE_URL|PRIVATE_DATABASE_URL)$'
 source .profile.d/pio-env.sh
 
 if [ -f "${BUILD_DIR}/engine.json" ]
