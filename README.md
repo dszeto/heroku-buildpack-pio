@@ -1,18 +1,85 @@
 # Heroku buildpack for PredictionIO
 
-[PredictionIO](http://docs.prediction.io/start/) is an open source machine learning analytics application. 
+[PredictionIO](http://predictionio.incubator.apache.org) is an open source machine learning framework. 
 
 
 Two apps are composed to make a basic PredictionIO service:
 
-1. **Engine**: a specialized machine learning app which provides training of a model and then queries against that model; generated from a [template](http://predictionio.incubator.apache.org/gallery/template-gallery/) or [custom code](http://predictionio.incubator.apache.org/customize/).
+1. **Engine**: a specialized machine learning app which provides training of a model and then queries against that model; generated from a [template](https://predictionio.incubator.apache.org/gallery/template-gallery/) or [custom code](https://predictionio.incubator.apache.org/customize/).
 2. **Eventserver**: a simple HTTP API app for capturing events to process from other systems; shareable between multiple engines.
 
 
-✏️ Throughout this doc, code terms that start with `$` represent a value you should customize.
+## Docs 📚
+
+✏️ Throughout these docs, code terms that start with `$` represent a value (shell variable) that should be replaced with a customized value, e.g `$eventserver_name`, `$spark_master_name`, `$postgres_addon_id`…
+
+* [Heroku architectures](#heroku-architectures)
+  * [Cluster on Heroku Enterprise](#cluster-on-heroku-enterprise)
+    1. [Database must be in Common Runtime](#database-must-be-in-common-runtime)
+    1. [Set Spark master on an engine](#set-spark-master-on-an-engine)
+  * [Single dyno on Common Runtime](#single-dyno-on-common-runtime)
+* [Eventserver](#eventserver)
+  1. [Create the eventserver](#create-the-eventserver)
+  1. [Deploy the eventserver](#deploy-the-eventserver)
+* [Engine](#engine)
+  1. [Create an engine](#create-an-engine)
+  1. [Create a Heroku app for the engine](#create-a-heroku-app-for-the-engine)
+  1. [Create a PredictionIO app in the eventserver](#create-a-predictionio-app-in-the-eventserver)
+  1. [Create a PredictionIO app in the eventserver](#create-a-predictionio-app-in-the-eventserver)
+  1. [Configure the Heroku app to use the eventserver](#configure-the-heroku-app-to-use-the-eventserver)
+  1. [Update `engine.json`](#update-engine-json)
+  1. [Import data](#import-data)
+  1. [Deploy to Heroku](#deploy-to-heroku)
+* [Training](#training)
+  * [Automatic training](#automatic-training)
+  * [Manual training](#manual-training)
+* [Evaluation](#evaluation)
+  1. [Changes required for evaluation](#changes-required-for-evaluation)
+  1. [Perform evaluation](#perform-evaluation)
+  1. [Re-deploy best parameters](#re-deploy-best-parameters)
+* [Configuration](#configuration)
+  * [Environment variables](#environment-variables)
+* [Running commands](#running-commands)
 
 
-## Create the Eventserver
+## Heroku architectures
+
+### Cluster on Heroku Enterprise
+
+Use PredictionIO engines with a scalable Spark cluster.
+
+Deploy [spark-in-space](https://github.com/heroku/spark-in-space) into a [Private Space](https://devcenter.heroku.com/articles/private-spaces).
+
+#### Database must be in Common Runtime
+
+🚨 *Database connection is required during build. Stateless builds to solve this issue are in discussion on the [Apache Software Foundation Spark users mailing list](http://predictionio.incubator.apache.org/support/)*
+
+```bash
+heroku addons:create heroku-postgresql:standard-0 --region=us -a $eventserver_name --confirm $eventserver_name
+```
+
+#### Set Spark master on an engine
+
+Engines must be pointed at the Spark master. Include the `--master` option along with any other [Spark options](#environment-variables):
+
+```bash
+heroku config:set \
+  PIO_TRAIN_SPARK_OPTS='--master spark://1.master.$spark_master_name.app.localspace:7077' \
+  PIO_SPARK_OPTS='--master spark://1.master.$spark_master_name.app.localspace:7077'
+```
+
+### Single dyno on Common Runtime
+
+This buildpacks supports deploying PredictionIO engines on a single dyno outside a Private Space.
+
+The approach runs Spark within the same process as PredictionIO. This is only recommended for experimental, proof-of-concept work. The limited resources of a single dyno restrict use of typically large, statistically significant datasets.
+
+Only **Performance-L** dynos with 14GB RAM (currently $16/day) provide reasonable utility in this configuration.
+
+
+## Eventserver
+
+### Create the eventserver
 
 ```bash
 git clone https://github.com/heroku/heroku-buildpack-pio.git pio-eventserver
@@ -25,6 +92,7 @@ heroku buildpacks:add -i 2 https://github.com/heroku/spark-in-space.git
 heroku buildpacks:add -i 3 heroku/scala
 ```
 
+* Note the Postgres add-on identifier, e.g. `postgresql-aerodynamic-00000`; use it below in place of `$postgres_addon_id`
 * We specify a `standard-0` database, because the free `hobby-dev` database is limited to 10,000 records.
 
 ### Deploy the eventserver
@@ -35,30 +103,14 @@ We delay deployment until the database is ready.
 heroku pg:wait && git push heroku master
 ```
 
-### Generate an app record on the eventserver
 
-```bash
-heroku run 'pio app new $pio_app_name'
-```
+## Engine
 
-* The app name, ID, & access key will be needed in a later step.
+### Create an engine
 
-### Find the eventserver's Postgresql add-on
+[Install PredictionIO locally](https://predictionio.incubator.apache.org/install/) and [download an engine template](https://predictionio.incubator.apache.org/start/download/) from the [gallery](https://predictionio.incubator.apache.org/gallery/template-gallery/). This can be as simple as downloading the source from Github and expanding it on your local computer.
 
-Look for the add-on identifier, like `postgresql-aerodynamic-00000`.
-
-```bash
-heroku addons
-```
-
-* The identifier will be needed in a later step
-
-
-## Create an Engine
-
-[Install PredictionIO locally](http://predictionio.incubator.apache.org/install/) and [download an engine template](http://predictionio.incubator.apache.org/start/download/) from the [gallery](http://predictionio.incubator.apache.org/gallery/template-gallery/).
-
-`cd` into the engine directory, and make it a git repo:
+`cd` into the engine directory, and ensure it is a git repo:
 
 ```bash
 git init
@@ -73,13 +125,25 @@ heroku buildpacks:add -i 2 https://github.com/heroku/heroku-buildpack-pio.git
 heroku buildpacks:add -i 3 https://github.com/heroku/spark-in-space.git
 ```
 
+### Create a PredictionIO app in the eventserver
+
+```bash
+heroku run 'pio app new $pio_app_name' -a $eventserver_name
+```
+
+* This returns an access key for the app; use it below in place of `$pio_app_access_key`.
+
 ### Configure the Heroku app to use the eventserver
 
 Replace the Postgres ID & eventserver config values with those from above:
 
 ```bash
-heroku addons:attach postgresql-name-XXXXX
-heroku config:set PIO_EVENTSERVER_IP=$eventserver_name.herokuapp.com PIO_EVENTSERVER_PORT=80 ACCESS_KEY=XXXXX APP_NAME=$pio_app_name
+heroku addons:attach $postgres_addon_id
+heroku config:set \
+  PIO_EVENTSERVER_IP=$eventserver_name.herokuapp.com \
+  PIO_EVENTSERVER_PORT=80 \
+  ACCESS_KEY=$pio_app_access_key \
+  APP_NAME=$pio_app_name
 ```
 
 ### Update `engine.json`
@@ -94,7 +158,7 @@ Modify this file to make sure the `appName` parameter matches the app record [cr
   }
 ```
 
-* If the `appName` param is missing, you may need to [upgrade the template](http://predictionio.incubator.apache.org/resources/upgrade/).
+* If the `appName` param is missing, you may need to [upgrade the template](https://predictionio.incubator.apache.org/resources/upgrade/).
 
 ### Import data
 
@@ -108,9 +172,11 @@ git commit -m "Initial PIO engine"
 git push heroku master
 ```
 
-### Train the model
+## Training
 
-#### Automatic training
+### Automatic training
+
+🚨 *Private Spaces do not currently support the release-phase script for automatic training. See: [Manual training](#manual-training).*
 
 `pio train` will automatically run during [release-phase of the Heroku app](https://devcenter.heroku.com/articles/release-phase).
 
@@ -126,32 +192,84 @@ Auto training may be disabled with:
 heroku config:set PIO_TRAIN_ON_RELEASE=false
 ```
 
-#### Manual training
+### Manual training
 
 ```bash
-heroku run train --size Performance-L
+heroku run train
 
-# If this was the first training, revive the app from "crashed" state.
+# You may need to revive the app from "crashed" state.
 heroku restart
 ```
 
-* We specify a larger, more expensive dyno size for training. Adjust the `--size` & `--driver-memory` flags to fit each other & your requirements.
+## Evaluation
 
-### Configure train & deploy
+PredictionIO provides an [Evaluation mode for engines](https://predictionio.incubator.apache.org/evaluation/), which uses cross-validation to help select optimum engine parameters.
 
-Pass additional options:
+⚠️ Only engines that contain `src/main/scala/Evaluation.scala` support Evaluation mode.
 
-* **pio command**
-  * set `PIO_OPTS`
-  * example: `heroku config:set PIO_OPTS='--variant engine-b.json'`
-* **Spark deployment**
-  * set `PIO_SPARK_OPTS`
-  * example: `heroku config:set PIO_SPARK_OPTS='--driver-memory 1g'`
-* **Spark training**
-  * set `PIO_TRAIN_SPARK_OPTS`
-  * example: `heroku config:set PIO_TRAIN_SPARK_OPTS='--driver-memory 12g'`
+### Changes required for evaluation
 
-### Running commands
+To run evaluation on Heroku, ensure `src/main/scala/Evaluation.scala` references the engine's name through the environment. Check the source file to verify that `appName` is set to `sys.env("APP_NAME")`. For example:
+
+```scala
+DataSourceParams(appName = sys.env("APP_NAME"), evalK = Some(5))
+```
+
+♻️ If that change was made, then commit, deploy, & re-train before proceeding.
+
+### Perform evaluation
+
+Next, start a console & change to the engine's directory:
+
+```bash
+heroku run bash
+$ cd pio-engine/
+```
+
+Then, start the process, specifying the evaluation & engine params classes from the `Evaluation.scala` source file. For example:
+
+```bash
+$ pio eval \
+    org.template.classification.AccuracyEvaluation \
+    org.template.classification.EngineParamsList  \
+    -- --driver-class-path /app/lib/postgresql_jdbc.jar
+```
+
+### Re-deploy best parameters
+
+Once `pio eval` completes, still in the Heroku console, copy the contents of `best.json`:
+
+```bash
+$ cat best.json
+```
+
+♻️ Paste into your local `engine.json`, commit, & deploy.
+
+
+## Configuration
+
+### Environment variables
+
+* `PIO_OPTS`
+  * options passed as `pio $opts`
+  * see: [`pio` command reference](https://predictionio.incubator.apache.org/cli/)
+  * example:
+
+    ```bash
+    heroku config:set PIO_OPTS='--variant best.json'
+    ```
+* `PIO_SPARK_OPTS` & `PIO_TRAIN_SPARK_OPTS`
+  * **deploy** & **training** options passed through to `spark-submit $opts`
+  * see: [`spark-submit` reference](http://spark.apache.org/docs/1.6.1/submitting-applications.html)
+  * example:
+
+    ```bash
+    heroku config:set \
+      PIO_SPARK_OPTS='--total-executor-cores 2 --executor-memory 1g' \
+      PIO_TRAIN_SPARK_OPTS='--total-executor-cores 8 --executor-memory 4g'
+    ```
+
+## Running commands
 
 `pio` commands that require DB access will need to have the driver specified as an argument (bug with PIO 0.9.5 + Spark 1.6.1):
 
@@ -171,25 +289,5 @@ Check engine status:
 
 ```bash
 heroku run "cd pio-engine && pio status -- --driver-class-path /app/lib/postgresql_jdbc.jar"
-```
-
-### Spark cluster
-
-Use PredictionIO engines with a scalable Spark cluster.
-
-Deploy [spark-in-space](https://github.com/heroku/spark-in-space) into a [Private Space](https://devcenter.heroku.com/articles/private-spaces).
-
-Database must be in Common Runtime (connection is required during build):
-
-```bash
-heroku addons:create heroku-postgresql:standard-0 --region=us -a $eventserver_name --confirm $eventserver_name
-```
-
-Set Spark master on an engine:
-
-```bash
-heroku config:set \
-  PIO_TRAIN_SPARK_OPTS='--master spark://1.master.$spark_master_name.app.localspace:7077' \
-  PIO_SPARK_OPTS='--master spark://1.master.$spark_master_name.app.localspace:7077'
 ```
 
