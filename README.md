@@ -11,11 +11,12 @@ Two apps are composed to make a basic PredictionIO service:
 
 ## Docs 📚
 
-✏️ Throughout these docs, code terms that start with `$` represent a value (shell variable) that should be replaced with a customized value, e.g `$eventserver_name`, `$spark_master_name`, `$postgres_addon_id`…
+✏️ Throughout these docs, code terms that start with `$` represent a value (shell variable) that should be replaced with a customized value, e.g `$eventserver_name`, `$engine_name`, `$postgres_addon_id`…
 
 * [Heroku architectures](#heroku-architectures)
   * [Cluster on Heroku Enterprise](#cluster-on-heroku-enterprise)
-    1. [Database must be in Common Runtime](#database-must-be-in-common-runtime)
+    1. [Apps created in the Space](#apps-created-in-the-space)
+    1. [Database in the Common Runtime](#database-in-the-common-runtime)
     1. [Set Spark master on an engine](#set-spark-master-on-an-engine)
   * [Single dyno on Common Runtime](#single-dyno-on-common-runtime)
 * [Eventserver](#eventserver)
@@ -24,7 +25,6 @@ Two apps are composed to make a basic PredictionIO service:
 * [Engine](#engine)
   1. [Create an engine](#create-an-engine)
   1. [Create a Heroku app for the engine](#create-a-heroku-app-for-the-engine)
-  1. [Create a PredictionIO app in the eventserver](#create-a-predictionio-app-in-the-eventserver)
   1. [Create a PredictionIO app in the eventserver](#create-a-predictionio-app-in-the-eventserver)
   1. [Configure the Heroku app to use the eventserver](#configure-the-heroku-app-to-use-the-eventserver)
   1. [Update `engine.json`](#update-engine-json)
@@ -44,15 +44,28 @@ Two apps are composed to make a basic PredictionIO service:
 
 ## Heroku architectures
 
+Two styles of deployment are possible on Heroku.
+
 ### Cluster on Heroku Enterprise
 
 Use PredictionIO engines with a scalable Spark cluster.
 
 Deploy [spark-in-space](https://github.com/heroku/spark-in-space) into a [Private Space](https://devcenter.heroku.com/articles/private-spaces).
 
-#### Database must be in Common Runtime
+#### Apps created in the Space
+
+The eventserver & engine apps must be created with the `--space` option set to the name of a Private Space:
+
+```bash
+heroku create $eventserver_name --space $space_name
+heroku create $engine_name --space $space_name
+```
+
+#### Database in the Common Runtime
 
 🚨 *Database connection is required during build. Stateless builds to solve this issue are in discussion on the [Apache Software Foundation Spark users mailing list](http://predictionio.incubator.apache.org/support/)*
+
+When [creating the eventserver's database](#create-the-eventserver), a few extra arguments are required to attach to the Private Space.
 
 ```bash
 heroku addons:create heroku-postgresql:standard-0 --region=us -a $eventserver_name --confirm $eventserver_name
