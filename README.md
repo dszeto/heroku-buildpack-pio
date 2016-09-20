@@ -153,13 +153,13 @@ Replace the Postgres ID & eventserver config values with those from above:
 ```bash
 heroku addons:attach $postgres_addon_id
 heroku config:set \
-  PIO_EVENTSERVER_IP=$eventserver_dns_name \
+  PIO_EVENTSERVER_HOSTNAME=$eventserver_dns_name \
   PIO_EVENTSERVER_PORT=80 \
   PIO_EVENTSERVER_ACCESS_KEY=$pio_app_access_key \
   PIO_EVENTSERVER_APP_NAME=$pio_app_name
 ```
 
-* See [environment variables](#environment-variables) for details about setting `PIO_EVENTSERVER_IP`.
+* See [environment variables](#environment-variables) for details about setting `PIO_EVENTSERVER_HOSTNAME`.
 
 ### Update `engine.json`
 
@@ -285,7 +285,7 @@ Engine deployments honor the following config vars:
       PIO_SPARK_OPTS='--total-executor-cores 2 --executor-memory 1g' \
       PIO_TRAIN_SPARK_OPTS='--total-executor-cores 8 --executor-memory 4g'
     ```
-* `PIO_EVENTSERVER_IP`
+* `PIO_EVENTSERVER_HOSTNAME`
   * in Private Space: `web.$eventserver_name.app.localspace`
   * in Common Runtime: `$eventserver_name.herokuapp.com`
 * `PIO_EVENTSERVER_PORT`
